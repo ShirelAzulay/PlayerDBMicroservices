@@ -33,7 +33,8 @@ public class CSVLoaderService {
 
     @Transactional
     public void reloadCSV() {
-        try (CSVReader reader = new CSVReader(new InputStreamReader(getClass().getResourceAsStream("/Player_small.csv")))) {
+        try (CSVReader reader = new CSVReader(new InputStreamReader(getClass().getResourceAsStream("/Player.csv")))) {
+       // try (CSVReader reader = new CSVReader(new InputStreamReader(getClass().getResourceAsStream("/Player_small.csv")))) {
 
             logger.info("Started reloading player data from CSV");
             List<String[]> records = reader.readAll();
