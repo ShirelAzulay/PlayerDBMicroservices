@@ -78,6 +78,7 @@ public class CSVLoaderService {
                     // Send Kafka message
 
                     //meanwhile disabled it => kafkaProducerService.sendMessage("Player loaded/updated: " + player);
+                    kafkaProducerService.sendMessage("Player loaded/updated: " + player);
 
                 } catch (Exception e) {
                     logger.error("Error parsing record: {}", (Object) record, e);
