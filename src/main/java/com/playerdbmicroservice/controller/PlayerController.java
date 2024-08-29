@@ -1,11 +1,9 @@
 package com.playerdbmicroservice.controller;
 
 import com.playerdbmicroservice.entity.Player;
-import com.playerdbmicroservice.repository.PlayerRepository;
 import com.playerdbmicroservice.service.CSVLoaderService;
-
+import com.playerdbmicroservice.service.PlayerService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +16,7 @@ import java.util.Optional;
 public class PlayerController {
 
     @Autowired
-    private PlayerRepository playerRepository;
+    private PlayerService playerService;
 
     @Autowired
     private CSVLoaderService csvLoaderService;
@@ -27,19 +25,19 @@ public class PlayerController {
     public List<Player> getAllPlayers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return playerRepository.findAll(PageRequest.of(page, size)).getContent();
+        return playerService.getAllPlayers(page, size);
     }
 
     @GetMapping("/{playerID}")
-    public Optional<Player> getPlayerById(@PathVariable String playerID) {
-        return playerRepository.findById(playerID);
+    public ResponseEntity<Player> getPlayerById(@PathVariable String playerID) {
+        Optional<Player> player = playerService.getPlayerById(playerID);
+        return player.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
     @PostMapping("/reload")
     public ResponseEntity<ReloadResponse> reloadCSV() {
         csvLoaderService.reloadCSV();
-
-        // Create a new response object or retrieve actual player data
         ReloadResponse response = new ReloadResponse("success", "CSV reloaded successfully");
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
