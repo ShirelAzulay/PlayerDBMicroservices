@@ -160,7 +160,7 @@ public class CSVLoaderService {
         try {
             Map<String, String> invalidRecord = mapCsvRecordToMap(record);
 
-            kafkaProducerService.sendMessage(invalidRecord.toString());
+            kafkaProducerService.sendMessage(INVALID_PLAYER_TOPIC, invalidRecord.toString());
             logger.info("Sent invalid player record to Kafka: {}", invalidRecord);
         } catch (Exception e) {
             logger.error("Error sending invalid player record to Kafka: {}", (Object) record, e);
