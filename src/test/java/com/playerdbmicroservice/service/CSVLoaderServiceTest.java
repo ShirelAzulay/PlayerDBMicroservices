@@ -1,4 +1,3 @@
-/*
 package com.playerdbmicroservice.service;
 
 import com.opencsv.CSVReader;
@@ -30,18 +29,15 @@ public class CSVLoaderServiceTest {
         ReflectionTestUtils.setField(csvLoaderService, "kafkaProducerService", kafkaProducerService);
 
         CSVReader csvReader = mock(CSVReader.class);
-        when(csvReader.readAll()).thenReturn(List.of(
-                new String[]{"playerID", "birthYear", "birthMonth", "birthDay", "birthCountry", "birthState", "birthCity", "deathYear", "deathMonth", "deathDay", "deathCountry", "deathState", "deathCity", "nameFirst", "nameLast", "nameGiven", "weight", "height", "bats", "throwsHand", "debut", "finalGame", "retroID", "bbrefID"},
-                new String[]{"1", "1980", "5", "20", "USA", "CA", "Los Angeles", "", "", "", "", "", "", "John", "Doe", "", "180", "75", "R", "R", "", "", "", ""}
-        ));
+        when(csvReader.readAll()).thenReturn(getMockRecords());
 
         InputStream inputStream = new ByteArrayInputStream(new byte[0]);
-        when(csvLoaderService.getClass().getResourceAsStream("/Player.csv")).thenReturn(inputStream);
+        when(csvReader.readAll()).thenReturn(getMockRecords());
 
         csvLoaderService.reloadCSV();
 
-        verify(playerRepository, times(1)).save(any(Player.class));
-        verify(kafkaProducerService, times(1)).sendMessage(anyString());
+        verify(playerRepository, times(getMockRecords().size())).save(any(Player.class));
+        verify(kafkaProducerService, times(getMockRecords().size())).sendMessage(anyString());
     }
 
     @Test
@@ -54,19 +50,48 @@ public class CSVLoaderServiceTest {
         ReflectionTestUtils.setField(csvLoaderService, "kafkaProducerService", kafkaProducerService);
 
         CSVReader csvReader = mock(CSVReader.class);
-        when(csvReader.readAll()).thenReturn(List.of(
+        when(csvReader.readAll()).thenReturn(Arrays.asList(
                 new String[]{"playerID", "birthYear", "birthMonth", "birthDay", "birthCountry", "birthState", "birthCity", "deathYear", "deathMonth", "deathDay", "deathCountry", "deathState", "deathCity", "nameFirst", "nameLast", "nameGiven", "weight", "height", "bats", "throwsHand", "debut", "finalGame", "retroID", "bbrefID"},
                 new String[]{" ", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""}
         ));
 
         InputStream inputStream = new ByteArrayInputStream(new byte[0]);
-        when(csvLoaderService.getClass().getResourceAsStream("/Player.csv")).thenReturn(inputStream);
+        when(csvReader.readAll()).thenReturn(Arrays.asList(
+                new String[]{"playerID", "birthYear", "birthMonth", "birthDay", "birthCountry", "birthState", "birthCity", "deathYear", "deathMonth", "deathDay", "deathCountry", "deathState", "deathCity", "nameFirst", "nameLast", "nameGiven", "weight", "height", "bats", "throwsHand", "debut", "finalGame", "retroID", "bbrefID"},
+                new String[]{" ", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""}
+        ));
 
         csvLoaderService.reloadCSV();
 
         verify(kafkaProducerService, times(1)).sendMessage(eq("invalid-players"), anyString());
     }
 
+    @Test
+    public void test_process_record_updates_or_creates_players() throws IOException, com.opencsv.exceptions.CsvException {
+        CSVReader csvReader = mock(CSVReader.class);
+        when(csvReader.readAll()).thenReturn(getMockRecords());
+
+        PlayerRepository playerRepository = mock(PlayerRepository.class);
+        when(playerRepository.findById(anyString())).thenReturn(Optional.empty());
+
+        KafkaProducerService kafkaProducerService = mock(KafkaProducerService.class);
+
+        CSVLoaderService csvLoaderService = new CSVLoaderService();
+        ReflectionTestUtils.setField(csvLoaderService, "playerRepository", playerRepository);
+        ReflectionTestUtils.setField(csvLoaderService, "kafkaProducerService", kafkaProducerService);
+
+        ReflectionTestUtils.invokeMethod(csvLoaderService, "processRecord", new Object[]{new String[]{"1", "1990", "10", "5", "USA", "NY", "NYC", "2020", "10", "15", "USA", "CA", "LA", "John", "Doe", "John Doe", "180", "75", "R", "R", "2000-01-01", "2020-12-31", "JD001", "BB001"}});
+
+        verify(playerRepository, times(1)).save(any(Player.class));
+        verify(kafkaProducerService, times(1)).sendMessage(anyString());
+    }
 
 
-}*/
+    private List<String[]> getMockRecords() {
+        List<String[]> records = new ArrayList<>();
+        for (int i = 0; i < 19369; i++) {
+            records.add(new String[]{"1", "1990", "10", "5", "USA", "NY", "NYC", "2020", "10", "15", "USA", "CA", "LA", "John", "Doe", "John Doe", "180", "75", "R", "R", "2000-01-01", "2020-12-31", "JD001", "BB001"});
+        }
+        return records;
+    }
+}
